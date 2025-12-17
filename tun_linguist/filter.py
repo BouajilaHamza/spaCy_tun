@@ -53,6 +53,15 @@ class DialectScorer:
     # Tunisian positives.
     _tun_future_re: Final[re.Pattern[str]] = re.compile(r"(?xi)(?:\b(?:bash|besh)\b|(?:^|\s)(?:باش|بش)(?=\s))")
     _tun_genitive_re: Final[re.Pattern[str]] = re.compile(r"(?xi)(?:\bmta3\b|(?:^|\s)متاع(?:\s|$))")
+    # Tunisian demonstratives (high-frequency dialect identifiers).
+    _tun_demonstratives_re: Final[re.Pattern[str]] = re.compile(
+        r"(?xi)(?:"
+        r"\b(?:hadhouma|ha3ouma)\b"  # plural demonstrative (Latin)
+        r"|\b(?:haka|hakka)\b"  # distal masc (Latin)
+        r"|\b(?:haki|hakki)\b"  # distal fem (Latin)
+        r"|(?:^|\s)(?:هاذوما|هاكا|هكا|هاكي)(?:\s|$)"  # Arabic script
+        r")"
+    )
 
     # Romance/Berber examples: explicitly *not* penalized (kept as a reminder / whitelist seed).
     _loanword_whitelist: Final[set[str]] = {"karhba", "krahib", "brika", "fakrun", "كرهبـة", "كراهب", "بريكة", "فكرون"}
@@ -61,7 +70,9 @@ class DialectScorer:
     _W_FUTURE_BASH: Final[float] = 4.0
     _W_GENITIVE_MTA3: Final[float] = 4.0
     _W_NEG_MA_SH: Final[float] = 4.5
+    _W_NEG_CLITIC_TRAPPING: Final[float] = 1.5
     _W_DISCOURSE: Final[float] = 3.5
+    _W_DEMONSTRATIVE: Final[float] = 2.0
     _W_N_PREFIX_1SG: Final[float] = 2.5
     _W_N_PREFIX_1PL: Final[float] = 1.5
     _W_QA3ID: Final[float] = 2.0
@@ -121,12 +132,22 @@ class DialectScorer:
         if ma_sh:
             positives["neg_ma_sh"] = len(ma_sh)
             score += self._W_NEG_MA_SH * len(ma_sh)
+            trapped = [f for f in ma_sh if getattr(f, "has_trapped_clitic", False)]
+            if trapped:
+                positives["neg_clitic_trapping"] = len(trapped)
+                score += self._W_NEG_CLITIC_TRAPPING * len(trapped)
 
         # Discourse particles.
         discourse = self._discourse.find(text)
         if discourse:
             positives["discourse_marker"] = len(discourse)
             score += self._W_DISCOURSE * len(discourse)
+
+        # Demonstratives.
+        demo_hits = list(self._tun_demonstratives_re.finditer(text))
+        if demo_hits:
+            positives["demonstrative"] = len(demo_hits)
+            score += self._W_DEMONSTRATIVE * len(demo_hits)
 
         # Verb morphology: n- paradigm.
         n_1sg = [f for f in verb_findings if f.feature == "imperfective_paradigm" and f.person == "1sg"]
