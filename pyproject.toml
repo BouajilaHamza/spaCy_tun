@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tun_linguist"
+version = "0.1.0"
+description = "Tunisian Arabic (Derja) linguistic feature extraction, normalization, and dataset filtering"
+readme = "LICENSE"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "tun_linguist contributors" }]
+keywords = ["nlp", "arabic", "tunisian", "dialect", "derja", "morphology", "dataset"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Typing :: Typed",
+]
+
+[tool.setuptools]
+packages = ["tun_linguist"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
