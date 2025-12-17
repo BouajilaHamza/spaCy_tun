@@ -68,6 +68,46 @@ class VerbAnalyzer:
         r"(?xi)\b(?:(?P<tun1sg>nektib|nektb)|(?P<tun1pl>nektbu)|(?P<msa1sg>aktubu))\b"
     )
 
+    # --- Context-aware imperfective detection (Arabic script + Latin) ---
+    # This is substantially higher precision for Arabic script, where ن- alone is ambiguous (MSA "we" vs Tunisian "I").
+    _after_future_capture_re: Final[re.Pattern[str]] = re.compile(
+        rf"(?xi)(?:\b(?:bash|besh)\b|(?:^|\s)(?:باش|بش))\s+(?P<verb>[\w{_ARABIC_LETTERS}]+)"
+    )
+    _after_progressive_capture_re: Final[re.Pattern[str]] = re.compile(
+        rf"(?xi)(?:\b(?:qa3id|qa3da|qa3din)\b|(?:^|\s)(?:قاعد|قاعدة|قاعدين))\s+(?P<verb>[\w{_ARABIC_LETTERS}]+)"
+    )
+
+    # Arabic imperfective prefixes: أ/ن/ت/ي . We only need أ vs ن here.
+    _arabic_imperfective_prefix_re: Final[re.Pattern[str]] = re.compile(r"^[أنتي]")
+
+    def _classify_imperfective_token(self, token: str, span: tuple[int, int]) -> VerbFinding | None:
+        """Classify a single verb-like token by its imperfective prefix/suffix heuristics."""
+        if not token:
+            return None
+
+        # Arabic script
+        first = token[0]
+        if "\u0600" <= first <= "\u06FF":
+            if not self._arabic_imperfective_prefix_re.match(token):
+                return None
+            if first == "أ" and len(token) >= 4:
+                return VerbFinding(span, token, feature="msa_a_prefix_imperfective", person="1sg", script="arabic")
+            if first == "ن" and len(token) >= 3:
+                if token.endswith(("وا", "و")):
+                    return VerbFinding(span, token, feature="imperfective_paradigm_contextual", person="1pl", script="arabic")
+                return VerbFinding(span, token, feature="imperfective_paradigm_contextual", person="1sg", script="arabic")
+            return None
+
+        # Latin script (Arabizi-ish without digits)
+        low = token.lower()
+        if low.startswith("a") and len(low) >= 4:
+            return VerbFinding(span, token, feature="msa_a_prefix_imperfective", person="1sg", script="latin")
+        if low.startswith("n") and len(low) >= 3:
+            if low.endswith(("u", "ou", "w")):
+                return VerbFinding(span, token, feature="imperfective_paradigm_contextual", person="1pl", script="latin")
+            return VerbFinding(span, token, feature="imperfective_paradigm_contextual", person="1sg", script="latin")
+        return None
+
     def find_features(self, text: str) -> list[VerbFinding]:
         findings: list[VerbFinding] = []
 
@@ -93,6 +133,18 @@ class VerbAnalyzer:
         # Progressive marker.
         for m in self._progressive_re.finditer(text):
             findings.append(VerbFinding(m.span(), m.group(0).strip(), feature="progressive_qa3id"))
+
+        # Context-aware imperfective: verb immediately after bash/besh or qa3id (high precision for Arabic script).
+        for m in self._after_future_capture_re.finditer(text):
+            tok = m.group("verb")
+            vf = self._classify_imperfective_token(tok, m.span("verb"))
+            if vf is not None:
+                findings.append(vf)
+        for m in self._after_progressive_capture_re.finditer(text):
+            tok = m.group("verb")
+            vf = self._classify_imperfective_token(tok, m.span("verb"))
+            if vf is not None:
+                findings.append(vf)
 
         # General imperfective detection (heuristic).
         for m in self._tun_1pl_latin_re.finditer(text):

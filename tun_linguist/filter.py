@@ -65,6 +65,8 @@ class DialectScorer:
     _W_N_PREFIX_1SG: Final[float] = 2.5
     _W_N_PREFIX_1PL: Final[float] = 1.5
     _W_QA3ID: Final[float] = 2.0
+    _W_CONTEXTUAL_IMP_1SG: Final[float] = 3.0
+    _W_CONTEXTUAL_IMP_1PL: Final[float] = 1.75
 
     _P_MSA_MARKER: Final[float] = -6.0
     _P_MSA_SA_FUTURE: Final[float] = -5.0
@@ -129,8 +131,16 @@ class DialectScorer:
         # Verb morphology: n- paradigm.
         n_1sg = [f for f in verb_findings if f.feature == "imperfective_paradigm" and f.person == "1sg"]
         n_1pl = [f for f in verb_findings if f.feature == "imperfective_paradigm" and f.person == "1pl"]
+        ctx_1sg = [f for f in verb_findings if f.feature == "imperfective_paradigm_contextual" and f.person == "1sg"]
+        ctx_1pl = [f for f in verb_findings if f.feature == "imperfective_paradigm_contextual" and f.person == "1pl"]
         qa3id = [f for f in verb_findings if f.feature == "progressive_qa3id"]
 
+        if ctx_1sg:
+            positives["contextual_imperfective_1sg"] = len(ctx_1sg)
+            score += self._W_CONTEXTUAL_IMP_1SG * len(ctx_1sg)
+        if ctx_1pl:
+            positives["contextual_imperfective_1pl"] = len(ctx_1pl)
+            score += self._W_CONTEXTUAL_IMP_1PL * len(ctx_1pl)
         if n_1sg:
             positives["n_prefix_1sg"] = len(n_1sg)
             score += self._W_N_PREFIX_1SG * len(n_1sg)
