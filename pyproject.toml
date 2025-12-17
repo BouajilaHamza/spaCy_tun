@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "tun_linguist"
 version = "0.1.0"
 description = "Tunisian Arabic (Derja) linguistic feature extraction, normalization, and dataset filtering"
-readme = "LICENSE"
+readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "tun_linguist contributors" }]
@@ -15,10 +15,50 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Typing :: Typed",
+  "Topic :: Text Processing :: Linguistic",
+  "Natural Language :: Arabic",
 ]
+
+dependencies = []
+
+[project.optional-dependencies]
+processing = [
+    "datasets>=2.14.0",
+    "huggingface_hub>=0.16.0",
+]
+training = [
+    "torch>=2.0.0",
+    "datasets>=2.14.0",
+    "huggingface_hub>=0.16.0",
+]
+all = [
+    "datasets>=2.14.0",
+    "huggingface_hub>=0.16.0",
+    "torch>=2.0.0",
+]
+
+[project.scripts]
+process-derja = "scripts.process_derja_dataset:main"
+score-mt = "scripts.score_mt_outputs:main"
 
 [tool.setuptools]
 packages = ["tun_linguist"]
 
+[tool.setuptools.package-data]
+tun_linguist = ["py.typed"]
+
 [tool.pytest.ini_options]
 addopts = "-q"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
