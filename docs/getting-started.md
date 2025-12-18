@@ -1,27 +1,28 @@
-## Installation
+## Getting started
 
-### Library only
+### Install
 
 ```bash
 pip install -e .
 ```
 
-### Dataset processing / training extras
+### Optional extras
 
 ```bash
 pip install -e ".[processing]"
 pip install -e ".[training]"
+pip install -e ".[docs]"
 ```
 
-## Core concepts
+## Core mental model
 
-- **Normalization**: lightweight cleanup of noisy user text (e.g., Arabizi digits) without attempting full orthographic reconstruction.
-- **Feature extraction**: detect high-precision Tunisian grammar markers (future, negation, paradigm shift, possession).
-- **Authenticity scoring**: transparent rule-based scoring for filtering and diagnostics.
+- **Normalization**: conservative cleanup for noisy text (Arabizi digits), plus optional phonology exemplar tagging (Qaf/Gaf).
+- **Feature extraction**: detect a small set of **high-precision** Derja discriminators (future markers, circumfix negation, paradigm shift, possession, discourse particles).
+- **Authenticity scoring**: transparent rule-based scoring for filtering, with counts and notes that tell you *why* a line passed/failed.
 
-## Quick start
+## Quickstart
 
-### Score a sentence
+### 1) Score a sentence
 
 ```python
 from tun_linguist import DialectScorer
@@ -35,7 +36,12 @@ print(res.negatives)
 print(res.notes)
 ```
 
-### Extract specific features
+What you’ll typically do in a pipeline:
+
+- Keep lines with `res.is_authentic(threshold=...) == True`
+- Store `positives/negatives/notes` for auditing and error analysis
+
+### 2) Extract specific features (for debugging / analytics)
 
 ```python
 from tun_linguist import VerbAnalyzer, NegationParser
@@ -48,3 +54,7 @@ neg = NegationParser().find(text)
 print(verbs)
 print(neg)
 ```
+
+### 3) Run the dataset scripts
+
+This repo ships a dataset processing pipeline in `scripts/` (see the “Dataset pipeline” guide).

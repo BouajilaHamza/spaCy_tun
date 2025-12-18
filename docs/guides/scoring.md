@@ -2,6 +2,9 @@
 
 `DialectScorer` computes a transparent, rule-based score.
 
+!!! info "Goal"
+    Optimize for **precision** over recall: it’s better to keep fewer lines that are highly likely to be Tunisian Derja than to keep everything.
+
 ### Positives (Tunisian)
 
 - **Future**: `bash/besh` (`باش/بش`)
@@ -18,6 +21,15 @@
 - Arabic future prefix `سـ` (heuristic)
 - MSA 1sg imperfective `a-/أ-` (heuristic)
 
+## Reading the output
+
+`DialectScore` is intentionally explicit:
+
+- **`score`**: float (higher means “more likely Tunisian Derja”)
+- **`positives`**: dict of feature → count
+- **`negatives`**: dict of constraint → count
+- **`notes`**: lightweight diagnostics (e.g., Arabizi digit normalization, Qaf/Gaf exemplar tagging)
+
 ### Debugging
 
 The result provides counts and notes:
@@ -31,3 +43,9 @@ print(r.positives)
 print(r.negatives)
 print(r.notes)
 ```
+
+## Common pitfalls
+
+- **Short lines**: a single strong marker can dominate (by design).
+- **Borrowings/loanwords**: the scorer avoids penalizing them; absence of a penalty is intentional.
+- **Orthographic variation**: if you have heavily noisy Arabizi, consider normalizing digits and relying on the marker set rather than strict spelling.

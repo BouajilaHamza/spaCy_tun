@@ -1,28 +1,52 @@
 ## tun_linguist
 
-`tun_linguist` is a production-oriented library for **Tunisian Arabic (Derja)** linguistic feature extraction, normalization, and dataset filtering.
+**Tunisian Derja linguistic feature extraction + dataset filtering.**
 
-It is designed for **high-precision dataset curation**: reward definitive Tunisian markers (e.g., `bash/besh`, `ma…sh`, `mta3`) while penalizing strong MSA constraints (e.g., `sawfa`, `lan/lam/laysa`, `سـ` future prefix).
+`tun_linguist` is built for *high-precision* dialect identification and dataset curation. It focuses on a small set of **strong discriminators** that reliably separate Tunisian Derja from MSA in noisy, real-world text.
 
-### What you can do with tun_linguist
+<div class="grid cards" markdown>
 
-- **Filter** mixed Arabic corpora to keep authentic Derja.
-- **Score** sentences for “Tunisian-ness” with transparent, debuggable features.
-- **Generate** preference pairs (SPO/DPO) and contrastive pairs for training.
-- **Normalize** common noisy forms (Arabizi digits; Qaf/Gaf exemplar unification) for better grouping and retrieval.
+-   ### Score authenticity
+    Debuggable rule-based scoring (positives/negatives + notes).
 
-### Quick example
+    **Best for**: filtering corpora, ranking MT outputs, dataset curation.
+
+-   ### Extract markers
+    Verbal morphology, negation circumfix, genitive, discourse particles, interrogatives.
+
+    **Best for**: analysis, feature engineering, QA.
+
+-   ### Handle noisy writing
+    Conservative normalization (Arabizi digits) + phonology exemplar tagging (Qaf/Gaf).
+
+    **Best for**: grouping, retrieval, diagnostics.
+
+-   ### Generate training data
+    Use the `scripts/` pipeline to produce scored JSONL, high-quality subsets, and preference pairs.
+
+</div>
+
+### 60‑second quickstart
 
 ```python
 from tun_linguist import DialectScorer
 
 scorer = DialectScorer()
-result = scorer.calculate_authenticity_score("غدوة باش نمشي للسوق")
 
-print(result.score)
-print(result.positives)
-print(result.negatives)
-print(result.notes)
+examples = [
+    "غدوة باش نمشي للسوق",          # future marker باش/بش
+    "ما-قلت-لها-ش",                 # ma…sh with trapped clitic
+    "هاذوما صحابي",                 # demonstrative هاذوما
+    "سوف أذهب إلى السوق غداً",      # strong MSA marker
+]
+
+for t in examples:
+    r = scorer.calculate_authenticity_score(t)
+    print("---", t)
+    print("score:", r.score)
+    print("positives:", r.positives)
+    print("negatives:", r.negatives)
+    print("notes:", r.notes)
 ```
 
 ### Install
@@ -31,9 +55,12 @@ print(result.notes)
 pip install -e .
 ```
 
-If you want to build these docs locally:
+### Build these docs locally
 
 ```bash
 pip install -e ".[docs]"
 mkdocs serve
 ```
+
+!!! tip "Not seeing the menu/tabs?"
+    On small screens, MkDocs Material collapses navigation into the **hamburger menu** (top-left).
