@@ -31,10 +31,20 @@ training = [
     "datasets>=2.14.0",
     "huggingface_hub>=0.16.0",
 ]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.6.0",
+    "mkdocstrings[python]>=0.27.0",
+    "pymdown-extensions>=10.0",
+]
 all = [
     "datasets>=2.14.0",
     "huggingface_hub>=0.16.0",
     "torch>=2.0.0",
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.6.0",
+    "mkdocstrings[python]>=0.27.0",
+    "pymdown-extensions>=10.0",
 ]
 
 [project.scripts]

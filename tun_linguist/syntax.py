@@ -10,6 +10,8 @@ class NegationFinding:
     span: tuple[int, int]
     text: str
     kind: str  # "circumfix" | "pseudo_verb"
+    body: str | None = None
+    has_trapped_clitic: bool = False
 
 
 class NegationParser:
@@ -54,7 +56,26 @@ class NegationParser:
     def find(self, text: str) -> list[NegationFinding]:
         out: list[NegationFinding] = []
         for m in self.MA_SH_CIRCUMFIX_RE.finditer(text):
-            out.append(NegationFinding(span=m.span(), text=m.group(0), kind="circumfix"))
+            body = m.groupdict().get("body")
+            has_trapped = False
+            if body:
+                # Heuristic: trapped clitics show up as extra chunks/hyphens or explicit pronoun+prep strings.
+                if re.search(r"[-–—\s]", body) is not None:
+                    has_trapped = True
+                if re.search(
+                    r"(?xi)\b(?:el|luh|lha|lk|lek|li|ni|ha|hom|hum|kom|koum|na)\b|(?:له|لها|لك|لي|ني|ها|هم|كم)\b",
+                    body,
+                ) is not None:
+                    has_trapped = True
+            out.append(
+                NegationFinding(
+                    span=m.span(),
+                    text=m.group(0),
+                    kind="circumfix",
+                    body=body,
+                    has_trapped_clitic=has_trapped,
+                )
+            )
         for m in self.PSEUDO_VERB_RE.finditer(text):
             out.append(NegationFinding(span=m.span(), text=m.group(0), kind="pseudo_verb"))
         return sorted(out, key=lambda f: f.span[0])

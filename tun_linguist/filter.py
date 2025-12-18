@@ -6,7 +6,7 @@ from typing import Final
 
 from .lexicon import DiscourseMarkerDetector, FalseFriendDetector
 from .morphology import NounAnalyzer, VerbAnalyzer
-from .normalizer import ArabiziConverter
+from .normalizer import ArabiziConverter, PhonologyNormalizer
 from .syntax import NegationParser
 
 
@@ -36,6 +36,7 @@ class DialectScorer:
     """
 
     _arabizi: Final[ArabiziConverter] = ArabiziConverter()
+    _phonology: Final[PhonologyNormalizer] = PhonologyNormalizer()
     _verbs: Final[VerbAnalyzer] = VerbAnalyzer()
     _nouns: Final[NounAnalyzer] = NounAnalyzer()
     _neg: Final[NegationParser] = NegationParser()
@@ -53,6 +54,15 @@ class DialectScorer:
     # Tunisian positives.
     _tun_future_re: Final[re.Pattern[str]] = re.compile(r"(?xi)(?:\b(?:bash|besh)\b|(?:^|\s)(?:باش|بش)(?=\s))")
     _tun_genitive_re: Final[re.Pattern[str]] = re.compile(r"(?xi)(?:\bmta3\b|(?:^|\s)متاع(?:\s|$))")
+    # Tunisian demonstratives (high-frequency dialect identifiers).
+    _tun_demonstratives_re: Final[re.Pattern[str]] = re.compile(
+        r"(?xi)(?:"
+        r"\b(?:hadhouma|ha3ouma)\b"  # plural demonstrative (Latin)
+        r"|\b(?:haka|hakka)\b"  # distal masc (Latin)
+        r"|\b(?:haki|hakki)\b"  # distal fem (Latin)
+        r"|(?:^|\s)(?:هاذوما|هاكا|هكا|هاكي)(?:\s|$)"  # Arabic script
+        r")"
+    )
 
     # Romance/Berber examples: explicitly *not* penalized (kept as a reminder / whitelist seed).
     _loanword_whitelist: Final[set[str]] = {"karhba", "krahib", "brika", "fakrun", "كرهبـة", "كراهب", "بريكة", "فكرون"}
@@ -61,7 +71,9 @@ class DialectScorer:
     _W_FUTURE_BASH: Final[float] = 4.0
     _W_GENITIVE_MTA3: Final[float] = 4.0
     _W_NEG_MA_SH: Final[float] = 4.5
+    _W_NEG_CLITIC_TRAPPING: Final[float] = 1.5
     _W_DISCOURSE: Final[float] = 3.5
+    _W_DEMONSTRATIVE: Final[float] = 2.0
     _W_N_PREFIX_1SG: Final[float] = 2.5
     _W_N_PREFIX_1PL: Final[float] = 1.5
     _W_QA3ID: Final[float] = 2.0
@@ -79,6 +91,8 @@ class DialectScorer:
         """
 
         original = text
+        # Phonology tagging (non-destructive): record qaf/gaf style variation for downstream use.
+        heart_variants = self._phonology.tag_qaf_gaf_heart(text)
         if normalize_arabizi_digits:
             text = self._arabizi.to_arabic(text)
 
@@ -121,12 +135,22 @@ class DialectScorer:
         if ma_sh:
             positives["neg_ma_sh"] = len(ma_sh)
             score += self._W_NEG_MA_SH * len(ma_sh)
+            trapped = [f for f in ma_sh if getattr(f, "has_trapped_clitic", False)]
+            if trapped:
+                positives["neg_clitic_trapping"] = len(trapped)
+                score += self._W_NEG_CLITIC_TRAPPING * len(trapped)
 
         # Discourse particles.
         discourse = self._discourse.find(text)
         if discourse:
             positives["discourse_marker"] = len(discourse)
             score += self._W_DISCOURSE * len(discourse)
+
+        # Demonstratives.
+        demo_hits = list(self._tun_demonstratives_re.finditer(text))
+        if demo_hits:
+            positives["demonstrative"] = len(demo_hits)
+            score += self._W_DEMONSTRATIVE * len(demo_hits)
 
         # Verb morphology: n- paradigm.
         n_1sg = [f for f in verb_findings if f.feature == "imperfective_paradigm" and f.person == "1sg"]
@@ -165,5 +189,11 @@ class DialectScorer:
         # Helpful note if Arabizi normalization changed text.
         if normalize_arabizi_digits and text != original:
             notes.append("arabizi_digits_normalized")
+
+        if heart_variants:
+            bed = sum(1 for f in heart_variants if f.style == "bedouin_g")
+            urb = sum(1 for f in heart_variants if f.style == "urban_q")
+            unk = sum(1 for f in heart_variants if f.style == "unknown")
+            notes.append(f"qaf_gaf_heart_variants=urban_q:{urb},bedouin_g:{bed},unknown:{unk}")
 
         return DialectScore(score=score, positives=positives, negatives=negatives, notes=notes)

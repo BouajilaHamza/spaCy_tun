@@ -2,7 +2,7 @@
 
 from .filter import DialectScorer, DialectScore
 from .morphology import NounAnalyzer, VerbAnalyzer, VerbFinding
-from .normalizer import ArabiziConverter, NormalizedQafGaf
+from .normalizer import ArabiziConverter, NormalizedQafGaf, PhonologyFinding, PhonologyNormalizer
 from .syntax import InterrogativeParser, NegationFinding, NegationParser
 
 __all__ = [
@@ -14,6 +14,8 @@ __all__ = [
     "NegationParser",
     "NounAnalyzer",
     "NormalizedQafGaf",
+    "PhonologyFinding",
+    "PhonologyNormalizer",
     "VerbAnalyzer",
     "VerbFinding",
 ]
