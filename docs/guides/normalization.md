@@ -2,6 +2,9 @@
 
 `tun_linguist` keeps normalization **conservative**: it fixes highly disruptive artifacts while avoiding aggressive rewriting.
 
+!!! warning "Not a full transliteration system"
+    The goal is *dataset curation*, not perfect orthography. If you need full Arabizi→Arabic reconstruction, you should add a dedicated transliteration component upstream.
+
 ### Arabizi digits (`ArabiziConverter.to_arabic`)
 
 Converts common digits used as letters:
@@ -31,3 +34,8 @@ print(pn.tag_qaf_gaf_heart("ڨلبو كبير"))
 ```
 
 The scorer records these variants in `DialectScore.notes` (non-destructive).
+
+### When should I use phonology normalization?
+
+- **For scoring**: by default the scorer only *tags* these variants (it does not rewrite your text).
+- **For retrieval/grouping**: use `normalize_qaf_gaf_heart(...)` if you want variants to share a common lemma (`qalb`) while still keeping a style tag.

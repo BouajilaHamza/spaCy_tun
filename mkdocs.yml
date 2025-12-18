@@ -1,6 +1,10 @@
 site_name: tun_linguist
 site_description: Tunisian Arabic (Derja) linguistic feature extraction, normalization, and dataset filtering
-repo_name: tun_linguist
+site_url: https://bouajilahamza.github.io/spaCy_tun/
+
+repo_url: https://github.com/BouajilaHamza/spaCy_tun
+repo_name: BouajilaHamza/spaCy_tun
+edit_uri: edit/main/docs/
 
 theme:
   name: material
@@ -10,6 +14,8 @@ theme:
     - navigation.top
     - content.code.copy
     - content.tabs.link
+    - navigation.footer
+    - navigation.indexes
   palette:
     - scheme: default
       primary: indigo
@@ -20,7 +26,11 @@ theme:
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
@@ -39,10 +49,12 @@ plugins:
 
 nav:
   - Home: index.md
-  - Getting started: getting-started.md
+  - Getting started:
+      - Overview: getting-started.md
   - Guides:
       - Linguistic features: guides/features.md
       - Normalization: guides/normalization.md
       - Authenticity scoring: guides/scoring.md
       - Dataset pipeline (scripts): guides/pipeline.md
-  - API reference: api.md
+  - Reference:
+      - API reference: api.md
