@@ -3,13 +3,13 @@ requires = ["setuptools>=75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tun_linguist"
+name = "spaCy_tun"
 version = "0.1.0"
 description = "Tunisian Arabic (Derja) linguistic feature extraction, normalization, and dataset filtering"
 readme = "LICENSE"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
-authors = [{ name = "tun_linguist contributors" }]
+authors = [{ name = "spaCy_tun contributors" }]
 keywords = ["nlp", "arabic", "tunisian", "dialect", "derja", "morphology", "dataset"]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 [tool.setuptools]
-packages = ["tun_linguist"]
+packages = ["spaCy_tun"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

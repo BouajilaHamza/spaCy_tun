@@ -1,4 +1,4 @@
-"""tun_linguist: Tunisian Arabic (Derja) feature extraction + dataset filtering."""
+"""spaCy_tun: Tunisian Arabic (Derja) feature extraction + dataset filtering."""
 
 from .filter import DialectScorer, DialectScore
 from .morphology import NounAnalyzer, VerbAnalyzer, VerbFinding
