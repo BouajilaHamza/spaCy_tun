@@ -6,7 +6,7 @@ from typing import Final
 
 from .lexicon import DiscourseMarkerDetector, FalseFriendDetector
 from .morphology import NounAnalyzer, VerbAnalyzer
-from .normalizer import ArabiziConverter
+from .normalizer import ArabiziConverter, PhonologyNormalizer
 from .syntax import NegationParser
 
 
@@ -36,6 +36,7 @@ class DialectScorer:
     """
 
     _arabizi: Final[ArabiziConverter] = ArabiziConverter()
+    _phonology: Final[PhonologyNormalizer] = PhonologyNormalizer()
     _verbs: Final[VerbAnalyzer] = VerbAnalyzer()
     _nouns: Final[NounAnalyzer] = NounAnalyzer()
     _neg: Final[NegationParser] = NegationParser()
@@ -90,6 +91,8 @@ class DialectScorer:
         """
 
         original = text
+        # Phonology tagging (non-destructive): record qaf/gaf style variation for downstream use.
+        heart_variants = self._phonology.tag_qaf_gaf_heart(text)
         if normalize_arabizi_digits:
             text = self._arabizi.to_arabic(text)
 
@@ -186,5 +189,11 @@ class DialectScorer:
         # Helpful note if Arabizi normalization changed text.
         if normalize_arabizi_digits and text != original:
             notes.append("arabizi_digits_normalized")
+
+        if heart_variants:
+            bed = sum(1 for f in heart_variants if f.style == "bedouin_g")
+            urb = sum(1 for f in heart_variants if f.style == "urban_q")
+            unk = sum(1 for f in heart_variants if f.style == "unknown")
+            notes.append(f"qaf_gaf_heart_variants=urban_q:{urb},bedouin_g:{bed},unknown:{unk}")
 
         return DialectScore(score=score, positives=positives, negatives=negatives, notes=notes)

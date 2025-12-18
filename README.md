@@ -1,303 +1,113 @@
-# Tunisian Derja Dataset Processing Pipeline
+## tun_linguist — Tunisian Derja linguistic toolkit
 
-A comprehensive toolkit for creating high-quality Tunisian Arabic (Derja) training data using the **tun_linguist** library (originally spaCy_tun). This pipeline processes the [Linagora Tunisian Derja Dataset](https://huggingface.co/datasets/linagora/Tunisian_Derja_Dataset) and generates data suitable for:
+`tun_linguist` is a production-oriented library for **Tunisian Arabic (Derja)** linguistic feature extraction, normalization, and dataset filtering.
 
-- **LLM Fine-tuning** (instruction-following format)
-- **SPO/DPO Training** (preference pairs based on linguistic authenticity)
-- **Encoder Training** (linguistic quality scoring models)
+It is designed for **high-precision dataset curation**: detect *definitive* Tunisian markers (e.g., `bash/besh`, `ma…sh`, `mta3`, discourse particles) and penalize *strong* MSA constraints (e.g., `sawfa`, `lan/lam/laysa`, `سـ` future prefix).
 
-## Features
+### Documentation (GitHub Pages)
 
-### tun_linguist Library
+This repo includes a modern documentation site built with **MkDocs Material** and deployed via **GitHub Actions → GitHub Pages**.
 
-The core library provides linguistic analysis tools specifically designed for Tunisian Derja:
+- **Build locally**:
 
-| Component | Description |
-|-----------|-------------|
-| `DialectScorer` | Computes authenticity scores based on Tunisian vs MSA markers |
-| `VerbAnalyzer` | Detects Tunisian verbal morphology (n-prefix, bash/besh future, qa3id progressive) |
-| `NounAnalyzer` | Detects nominal features (mta3 possession, plurals) |
-| `NegationParser` | Parses Tunisian ma...sh circumfix negation |
-| `InterrogativeParser` | Detects Tunisian interrogatives and wh-in-situ |
-| `ArabiziConverter` | Converts Arabizi digits (3,7,9,5) to Arabic letters |
-| `DiscourseMarkerDetector` | Finds Tunisian discourse particles (ti, yaxxi, bara, mela) |
-| `FalseFriendDetector` | Identifies Tunisian-MSA semantic shifts |
+```bash
+pip install -e ".[docs]"
+mkdocs serve
+```
 
-### Authenticity Scoring
-
-The scoring model rewards definitive Tunisian markers while penalizing MSA markers:
-
-**Positive Indicators (Tunisian):**
-- Future particles: `باش/بش` (bash/besh)
-- Possession: `متاع` (mta3)
-- Negation: `ما...ش` (ma...sh circumfix)
-- Imperfective 1sg/1pl: n- prefix paradigm
-- Progressive: `قاعد` (qa3id)
-- Discourse markers: `تي`, `ياخي`, `برا`, `مالا`
-
-**Negative Indicators (MSA):**
-- Future: `سوف` (sawfa), `س` prefix
-- Negation: `لن`, `لم`, `ليس`
-- Interrogatives: `ماذا`, `لماذا`, `كيف`, `أين`
-- Imperfective 1sg: أ- prefix
+- **Enable on GitHub** (one-time): go to **Repository Settings → Pages → Source** and select **GitHub Actions**. The workflow is in `.github/workflows/docs.yml`.
 
 ## Installation
 
+### Library only
+
 ```bash
 pip install -e .
-pip install datasets huggingface_hub torch
 ```
 
-## Quick Start
-
-### 1. Demo the Library
+### Extras
 
 ```bash
-python scripts/demo_tun_linguist.py
+# Dataset processing scripts
+pip install -e ".[processing]"
+
+# Training scripts
+pip install -e ".[training]"
+
+# Everything
+pip install -e ".[all]"
 ```
 
-### 2. Process the Full Dataset
+## Quick start
 
-```bash
-python scripts/process_derja_dataset.py \
-    --output-dir data/processed \
-    --sample-size 100000 \
-    --max-per-config 30000 \
-    --spo-pairs 10000 \
-    --contrastive-pairs 20000
-```
-
-### 3. Score MT Outputs
-
-```bash
-# Interactive mode
-python scripts/score_mt_outputs.py --interactive
-
-# Score a file
-python scripts/score_mt_outputs.py --input mt_outputs.jsonl --output scored.jsonl
-
-# Compare systems
-python scripts/score_mt_outputs.py --compare system1.jsonl system2.jsonl
-```
-
-## Output Formats
-
-### 1. Scored Dataset (`tunisian_derja_scored.jsonl`)
-
-Full dataset with linguistic features:
-
-```json
-{
-  "text": "غدوة باش نمشي للبلدية نقد اوراقي",
-  "source": "TunBERT",
-  "authenticity_score": 12.0,
-  "quality_tier": "high",
-  "is_authentic": true,
-  "positives": {"future_bash": 1, "n_prefix_1sg": 2},
-  "negatives": {},
-  "word_count": 5,
-  "negation_circumfix_count": 0,
-  "discourse_markers": [],
-  "verb_features": {"future_bash": 1, "imperfective_paradigm_1sg": 2}
-}
-```
-
-### 2. High-Quality Dataset (`tunisian_derja_high_quality.jsonl`)
-
-Filtered samples with score ≥ 8.0:
-
-```json
-{"text": "غدوة باش نمشي للبلدية نقد اوراقي", "score": 12.0}
-```
-
-### 3. LLM Instructions (`tunisian_derja_instructions.jsonl`)
-
-ChatML/ShareGPT format for instruction tuning:
-
-```json
-{
-  "messages": [
-    {"role": "system", "content": "أنت مساعد متخصص في اللهجة التونسية..."},
-    {"role": "user", "content": "حلل بنية النفي في هذه الجملة..."},
-    {"role": "assistant", "content": "تستخدم هذه الجملة نمط النفي التونسي..."}
-  ],
-  "metadata": {"source": "TunBERT", "instruction_type": "grammar_negation"}
-}
-```
-
-### 4. SPO/DPO Pairs (`tunisian_derja_spo_pairs.jsonl`)
-
-Preference pairs for alignment training:
-
-```json
-{
-  "prompt": "اكتب جملة بالدارجة التونسية الأصيلة:",
-  "chosen": "غدوة باش نمشي للسوق متاعنا",
-  "rejected": "سوف أذهب إلى السوق غداً",
-  "chosen_score": 12.5,
-  "rejected_score": -10.0,
-  "chosen_features": {"positives": {"future_bash": 1, "n_prefix_1sg": 1}},
-  "rejected_features": {"negatives": {"msa_marker": 1}}
-}
-```
-
-### 5. Encoder Training Data (`tunisian_derja_encoder_data.jsonl`)
-
-For training linguistic quality scoring models:
-
-```json
-{
-  "text": "ما فهمتش شنوة قالتلي",
-  "source": "Derja_tunsi",
-  "features": {
-    "authenticity_score": 4.5,
-    "is_authentic": false,
-    "has_negation_circumfix": true,
-    "has_discourse_markers": false,
-    "positive_marker_count": 1,
-    "negative_marker_count": 0,
-    "quality_tier": "medium"
-  }
-}
-```
-
-### 6. Contrastive Pairs (`tunisian_derja_contrastive_pairs.jsonl`)
-
-For contrastive encoder training:
-
-```json
-{
-  "text_a": "باش نكتب رسالة",
-  "text_b": "باش نقرا كتاب",
-  "label": 1,
-  "tier_a": "high",
-  "tier_b": "high",
-  "score_a": 8.5,
-  "score_b": 8.0
-}
-```
-
-## Training a Quality Encoder
-
-```bash
-python scripts/train_quality_encoder.py \
-    --data-path data/processed/tunisian_derja_encoder_data.jsonl \
-    --output-dir models/quality_encoder \
-    --epochs 10 \
-    --batch-size 32 \
-    --hidden-size 256
-```
-
-## Dataset Statistics (100K Sample)
-
-| Metric | Value |
-|--------|-------|
-| Total Samples | 100,000 |
-| High Quality (score ≥ 8.0) | 4,109 (4.1%) |
-| Medium Quality (score ≥ 3.0) | 23,524 (23.5%) |
-| Low Quality | 72,367 (72.4%) |
-
-**Feature Prevalence:**
-- Negation (ma...sh): 8.6%
-- Discourse Markers: 2.5%
-- Interrogatives: 4.2%
-- MSA Markers: 25.8%
-
-## Use Cases
-
-### 1. Train a Tunisian LLM
-
-Use `tunisian_derja_instructions.jsonl` for supervised fine-tuning:
-
-```python
-from datasets import load_dataset
-
-dataset = load_dataset("json", data_files="data/processed/tunisian_derja_instructions.jsonl")
-# Fine-tune with your favorite framework (transformers, axolotl, etc.)
-```
-
-### 2. Align with SPO/DPO
-
-Use `tunisian_derja_spo_pairs.jsonl` for preference optimization:
-
-```python
-from datasets import load_dataset
-
-dataset = load_dataset("json", data_files="data/processed/tunisian_derja_spo_pairs.jsonl")
-# Use with TRL's DPOTrainer or similar
-```
-
-### 3. Train a Quality Scoring Model
-
-Use for filtering MT outputs or ranking translations:
+### Score a sentence for Tunisian authenticity
 
 ```python
 from tun_linguist import DialectScorer
 
 scorer = DialectScorer()
 result = scorer.calculate_authenticity_score("غدوة باش نمشي للسوق")
-print(f"Score: {result.score}, Authentic: {result.is_authentic()}")
+
+print(result.score)
+print(result.positives)  # Tunisian markers
+print(result.negatives)  # MSA constraints
+print(result.notes)      # diagnostics / normalization notes
 ```
 
-### 4. Evaluate MT Systems
-
-```bash
-python scripts/score_mt_outputs.py --compare baseline.jsonl improved.jsonl
-```
-
-## API Reference
-
-### DialectScorer
+### Detect key grammatical markers
 
 ```python
-from tun_linguist import DialectScorer
+from tun_linguist import NegationParser, VerbAnalyzer
 
-scorer = DialectScorer()
-result = scorer.calculate_authenticity_score(text, normalize_arabizi_digits=True)
+text = "ما-قلت-لها-ش باش نمشي"
 
-# Result contains:
-# - score: float (higher = more authentic Tunisian)
-# - positives: dict[str, int] (Tunisian markers found)
-# - negatives: dict[str, int] (MSA markers found)
-# - notes: list[str] (additional information)
-# - is_authentic(threshold=5.0) -> bool
+print(NegationParser().find(text))
+print(VerbAnalyzer().find_features(text))
 ```
 
-### VerbAnalyzer
+## What’s inside
 
-```python
-from tun_linguist import VerbAnalyzer
+### Core library (`tun_linguist/`)
 
-analyzer = VerbAnalyzer()
-findings = analyzer.find_features(text)
+- **`DialectScorer`** (`tun_linguist/filter.py`)
+  - Transparent rule-based authenticity score + marker counts.
+  - Rewards Tunisian markers, penalizes strong MSA constraints.
+  - Adds an explicit bonus for **clitic trapping** in negation (e.g., `ma-qolt-el-ha-sh`).
+  - Rewards distinct Tunisian **demonstratives** (`hadhouma`, `haka`, `haki` and Arabic-script forms).
+  - Records Qaf/Gaf exemplar variation (heart: qalb/galb) as notes.
 
-# Each finding contains:
-# - span: (start, end)
-# - surface: str (matched text)
-# - feature: str (e.g., "future_bash", "imperfective_paradigm")
-# - person: str | None ("1sg", "1pl")
-# - script: str | None ("arabic", "latin")
-```
+- **`VerbAnalyzer`** (`tun_linguist/morphology.py`)
+  - **Paradigm shift**: imperfective `n-` patterns (1sg vs 1pl heuristics).
+  - **Future**: `bash/besh` (`باش/بش`).
+  - **Progressive**: `qa3id` (`قاعد/قاعدة/قاعدين`).
 
-### NegationParser
+- **`NounAnalyzer`** (`tun_linguist/morphology.py`)
+  - **Possession/genitive**: `mta3` (`متاع`).
 
-```python
-from tun_linguist import NegationParser
+- **`NegationParser`** (`tun_linguist/syntax.py`)
+  - Detects `ma … sh/ch` circumfix (Arabic + Latin) and marks **trapped clitics**.
 
-parser = NegationParser()
-findings = parser.find(text)
+- **`PhonologyNormalizer`** (`tun_linguist/normalizer.py`)
+  - High-precision **Qaf/Gaf** exemplar tagging and unification for “heart”:
+    - Latin/Arabizi: `qalb/galb/9alb`
+    - Arabic script: `قلب/ڨلب/گلب/ݣلب`
 
-# Each finding contains:
-# - span: (start, end)
-# - text: str (matched negation)
-# - kind: str ("circumfix" or "pseudo_verb")
-```
+- **`ArabiziConverter`** (`tun_linguist/normalizer.py`)
+  - Converts common Arabizi digits: `3→ع`, `7→ح`, `9→ق`, `5→خ`.
+
+- **`DiscourseMarkerDetector` / `FalseFriendDetector`** (`tun_linguist/lexicon.py`)
+  - High-salience Tunisian discourse particles and false-friend diagnostics.
+
+## Dataset pipeline scripts (`scripts/`)
+
+- `scripts/demo_tun_linguist.py`: quick demo.
+- `scripts/process_derja_dataset.py`: process the Linagora dataset and write curated JSONL artifacts.
+- `scripts/score_mt_outputs.py`: score MT outputs (interactive, file scoring, system comparison).
 
 ## License
 
-See [LICENSE](LICENSE) file.
+See `LICENSE`.
 
 ## Acknowledgments
 
-- [Linagora Tunisian Derja Dataset](https://huggingface.co/datasets/linagora/Tunisian_Derja_Dataset)
-- Original spaCy_tun concept by [BouajilaHamza](https://github.com/BouajilaHamza/spaCy_tun)
+- Linagora Tunisian Derja Dataset: `https://huggingface.co/datasets/linagora/Tunisian_Derja_Dataset`
